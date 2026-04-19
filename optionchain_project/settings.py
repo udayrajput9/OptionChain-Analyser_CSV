@@ -96,3 +96,71 @@ ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', 'sk-ant-xxxxxxxxxxxx')
 SUPER_BRAIN_MODEL = os.environ.get('SUPER_BRAIN_MODEL', 'claude-3-opus-20240229') # using claude 3 opus
 SUPER_BRAIN_MAX_TOKENS = int(os.environ.get('SUPER_BRAIN_MAX_TOKENS', 2000))
 MEMORY_COMPRESS_THRESHOLD = int(os.environ.get('MEMORY_COMPRESS_THRESHOLD', 5000))
+
+# =============================================================
+# PythonAnywhere Production Configuration (500MB Free Tier)
+# =============================================================
+
+if 'pythonanywhere' in os.environ.get('HOME', ''):
+    # Allowed hosts for production
+    ALLOWED_HOSTS = ['udayoption.pythonanywhere.com', 'www.udayoption.pythonanywhere.com', 'localhost', '127.0.0.1']
+    
+    # Production mode
+    DEBUG = False
+    
+    # Static files (compressed for 500MB limit)
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
+    STATIC_URL = '/static/'
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    
+    # Media files
+    MEDIA_ROOT = BASE_DIR / 'media'
+    MEDIA_URL = '/media/'
+    
+    # Security settings
+    SECURE_BROWSER_XSS_FILTER = True
+    CSRF_TRUSTED_ORIGINS = ['https://udayoption.pythonanywhere.com']
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SECURE = False
+    
+    # Session settings (use database - saves disk space)
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+    
+    # Caching (in-memory, no disk usage)
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'optionchain-cache',
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000
+            }
+        }
+    }
+    
+    # Logging (errors only - minimal disk usage)
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {message}',
+                'style': '{',
+            },
+        },
+        'handlers': {
+            'file': {
+                'level': 'ERROR',
+                'class': 'logging.FileHandler',
+                'filename': BASE_DIR / 'logs' / 'django.log',
+                'formatter': 'verbose',
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['file'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+        },
+    }

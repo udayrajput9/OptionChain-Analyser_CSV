@@ -1,0 +1,71 @@
+# Python
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.Python
+
+# Django
+*.log
+db.sqlite3
+db.backup.sqlite3
+staticfiles/
+media/
+*.pot
+
+# Environment
+.env
+.env.local
+.venv
+venv/
+ENV/
+env/
+
+# CSV Files (don't commit - only reference)
+stocks/*.csv
+stocks/*/*.csv
+!stocks/.gitkeep
+!stocks/TCS/.gitkeep
+!stocks/ETERNAL/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Node (if added)
+node_modules/
+package-lock.json
+
+# Cache
+.cache/
+*.cache
+
+# Large files
+*.zip
+*.tar.gz
+*.rar
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
