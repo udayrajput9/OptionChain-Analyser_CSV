@@ -1,0 +1,83 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="mb-4">Welcome to Super Brain Trading Terminal</h2>
+        <p class="text-muted">A quantitative option analyzer powered by 20 coordinated engines, a weighted Super Brain layer, CSV uploads, and structured daily context tracking.</p>
+        <a href="{% url 'upload' %}" class="btn btn-primary">Upload CSV / Fill Daily Context</a>
+    </div>
+</div>
+
+<div class="row mt-4">
+    {% for symbol, data in stock_data.items %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 p-3">
+            <div class="card-body">
+                <h4 class="card-title fw-bold text-info">{{ symbol }}</h4>
+                <p class="text-muted">{{ data.file_count }} Option Chain CSVs detected.</p>
+                {% if data.latest_context_date %}
+                <p class="small text-muted mb-2">Latest context: {{ data.latest_context_date }}{% if data.latest_context_slot %} | {{ data.latest_context_slot }}{% endif %}</p>
+                {% endif %}
+                
+                {% if data.latest_file %}
+                <div class="mb-3">
+                    <span class="badge bg-success mb-1">Latest Data</span><br>
+                    <small>Date: {{ data.latest_file.date_label }}</small>
+                </div>
+                
+                <a href="{% url 'report' stock=symbol date=data.latest_file.number %}" class="btn btn-primary w-100 mb-2">View Analysis Report</a>
+                <a href="{% url 'prediction' stock=symbol date=data.latest_file.number %}" class="btn btn-outline-warning w-100 mb-2">Tomorrow's Prediction (Super Brain)</a>
+                <a href="{% url 'outcome_feed' stock=symbol date='today' %}" class="btn btn-outline-secondary w-100 btn-sm">Feed Outcome</a>
+                <a href="{% url 'upload' %}?stock={{ symbol }}#csv-upload" class="btn btn-outline-info w-100 mt-2">Upload CSV Data</a>
+                
+                {% else %}
+                <p class="text-danger small">No valid CSVs found.</p>
+                <a href="{% url 'upload' %}?stock={{ symbol }}#csv-upload" class="btn btn-outline-info w-100 mt-2">Upload CSV Data</a>
+                {% endif %}
+
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-uppercase text-muted fw-bold d-block mb-2">Strategic Forms For {{ today }}</small>
+                    <div class="d-grid gap-2">
+                        {% if data.slot_statuses.MORNING_0910 %}
+                        <button class="btn btn-outline-success" disabled>09:10 AM Filled</button>
+                        {% else %}
+                        <a href="{% url 'upload' %}?stock={{ symbol }}&slot=MORNING_0910#market-context-form" class="btn btn-success">09:10 AM Form</a>
+                        {% endif %}
+
+                        {% if data.slot_statuses.MIDDAY_1300 %}
+                        <button class="btn btn-outline-success" disabled>01:00 PM Filled</button>
+                        {% else %}
+                        <a href="{% url 'upload' %}?stock={{ symbol }}&slot=MIDDAY_1300#market-context-form" class="btn btn-success">01:00 PM Form</a>
+                        {% endif %}
+
+                        {% if data.slot_statuses.CLOSE_1500 %}
+                        <button class="btn btn-outline-success" disabled>03:00 PM Filled</button>
+                        {% else %}
+                        <a href="{% url 'upload' %}?stock={{ symbol }}&slot=CLOSE_1500#market-context-form" class="btn btn-success">03:00 PM Form</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-top d-grid gap-2">
+                    <form method="post" action="{% url 'reset_stock' symbol %}" onsubmit="return confirm('Is stock card ka saara data reset ho jayega. CSV files, forms, predictions sab clear honge. Continue?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger w-100">Reset Card Data</button>
+                    </form>
+                    <form method="post" action="{% url 'delete_stock' symbol %}" onsubmit="return confirm('Ye stock card permanently delete ho jayega aur dashboard se hat jayega. Continue?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger w-100">Delete Card</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-md-12">
+        <div class="alert alert-warning">
+            No stock folders detected inside <code>stocks/</code>! Please create them and add <code>1_SYMBOL_OptionChain.csv</code> files.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        
+        <div class="card shadow-lg mb-5 border-0 rounded-4" style="background: linear-gradient(to bottom, #1e1e2d, #14141f);">
+            <div class="card-header border-bottom border-light border-opacity-10 py-4 px-5">
+                <h3 class="mb-0 text-white"><i class="bi bi-book me-2"></i> AAJ KI LEARNING REPORT — {{ stock }} ({{ date }})</h3>
+            </div>
+            
+            <div class="card-body p-5">
+                <div class="row mb-5 pb-4 border-bottom border-secondary border-opacity-25">
+                    <div class="col-md-4 text-center border-end border-secondary border-opacity-25">
+                        <small class="text-muted text-uppercase tracking-wider fw-bold">Actual Close</small>
+                        <h2 class="text-white mt-2 mb-0 fw-bold">₹{{ sb.actual_close|floatformat:2 }}</h2>
+                    </div>
+                    <div class="col-md-4 text-center border-end border-secondary border-opacity-25">
+                        <small class="text-muted text-uppercase tracking-wider fw-bold">Super Brain Pred</small>
+                        <h2 class="mt-2 mb-0 fw-bold
+                          {% if sb.was_correct %}text-success{% else %}text-danger{% endif %}">
+                          {% if sb.was_correct %}✅ SAHI{% else %}❌ GALAT{% endif %}
+                        </h2>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <small class="text-info text-uppercase tracking-wider fw-bold">Daily Intelligence Score</small>
+                        <h2 class="text-info mt-2 mb-0 fw-bold">{{ sb.accuracy_score|floatformat:0 }}<span class="fs-5 text-muted">/100</span></h2>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <h5 class="text-warning mb-4"><i class="bi bi-robot me-2"></i> SUPER BRAIN POST-ANALYSIS:</h5>
+                    <div class="p-4 rounded-3 text-light" style="background: rgba(255,193,7,0.05); border-left: 5px solid #ffc107;">
+                        <p class="fs-5 lh-lg fst-italic mb-0" style="font-family: Georgia, serif;">"{{ sb.post_analysis_hinglish }}"</p>
+                    </div>
+                </div>
+
+                <div class="row mb-5">
+                    <h5 class="text-light mb-4"><i class="bi bi-bar-chart-fill me-2"></i> ALGO REPORT CARD:</h5>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-success bg-transparent h-100">
+                            <div class="card-header bg-success bg-opacity-25 text-success fw-bold">
+                                ✅ Sahi Rahe ({{ correct_algos|length }})
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    {% for algo in correct_algos|slice:":8" %}
+                                    <li class="mb-2"><small class="text-light">{{ algo.algo_name }}</small></li>
+                                    {% endfor %}
+                                    {% if correct_algos|length > 8 %}
+                                    <li class="text-muted small fst-italic">...and {{ correct_algos|length|add:"-8" }} more</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-danger bg-transparent h-100">
+                            <div class="card-header bg-danger bg-opacity-25 text-danger fw-bold">
+                                ❌ Galat Rahe ({{ wrong_algos|length }})
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    {% for algo in wrong_algos|slice:":8" %}
+                                    <li class="mb-2"><small class="text-light">{{ algo.algo_name }}</small></li>
+                                    {% endfor %}
+                                    {% if wrong_algos|length > 8 %}
+                                    <li class="text-muted small fst-italic">...and {{ wrong_algos|length|add:"-8" }} more</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-3" style="background: rgba(13,110,253,0.05); border: 1px solid rgba(13,110,253,0.2);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="text-primary mb-0"><i class="bi bi-cpu me-2"></i> BRAIN MEMORY UPDATED</h5>
+                        <span class="badge bg-primary fs-6">+1 Learning Extracted</span>
+                    </div>
+                    <hr class="border-primary border-opacity-25">
+                    <div class="row text-center text-muted">
+                        <div class="col-6 border-end border-primary border-opacity-25">
+                            Total Deep Memory Embeddings
+                            <h4 class="text-white mt-2">{{ memory.total_days_learned }}</h4>
+                        </div>
+                        <div class="col-6">
+                            Latest Active Context
+                            <h4 class="text-white mt-2">Active</h4>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-5 text-center">
+                    <a href="{% url 'index' %}" class="btn btn-outline-light px-4 py-2 opacity-75 hover-opacity-100">Go to Dashboard</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

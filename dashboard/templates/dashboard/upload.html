@@ -1,0 +1,229 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card h-100 shadow-sm" id="csv-upload">
+      <div class="card-body">
+        <h3 class="mb-3">Option Chain CSV Upload</h3>
+        <p class="text-muted">Manual copy-paste ki jagah yahan se direct CSV upload karo. System stock folder me next sequence ke saath file save karega.</p>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Stock Symbol</label>
+            {{ upload_form.stock_symbol }}
+            {% if upload_form.stock_symbol.errors %}<div class="text-danger small mt-1">{{ upload_form.stock_symbol.errors|join:", " }}</div>{% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">CSV File</label>
+            {{ upload_form.csv_file }}
+            {% if upload_form.csv_file.errors %}<div class="text-danger small mt-1">{{ upload_form.csv_file.errors|join:", " }}</div>{% endif %}
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Upload And Analyse</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm" id="market-context-form">
+      <div class="card-body">
+        <h3 class="mb-3">Daily Market Context</h3>
+        <p class="text-muted">Har stock ke liye 3 strategic slots available hain: 09:10 AM, 01:00 PM, aur 03:00 PM. Same stock/date/slot dobara submit karne par old record update ho jayega.</p>
+        <div class="border rounded p-3 mb-4 bg-light-subtle">
+          <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <div>
+              <h5 class="mb-1">Smart Paste</h5>
+              <small class="text-muted">Market summary text yahan paste karo. System local parsing se form auto-fill karega.</small>
+            </div>
+            <button type="button" id="parse-market-text" class="btn btn-outline-primary">Parse Text Into Form</button>
+          </div>
+          <textarea id="market-summary-input" class="form-control" rows="12" placeholder="Date: 17-04-2026
+## Stock: Swiggy (SWIGGY)
+* Stock Open: ₹281.85
+* Stock Close: ₹277.45
+..."></textarea>
+          <div id="smart-paste-status" class="small mt-2 text-muted"></div>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+              <label class="form-label">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|join:", " }}</div>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mt-4 d-flex justify-content-between align-items-center">
+            <small class="text-muted">Selected slot save hote hi us date ke relevant predictions recalculate honge.</small>
+            <button type="submit" class="btn btn-success">Save Strategic Context</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function normalizeNumber(rawValue) {
+    if (!rawValue) return '';
+    let value = String(rawValue).trim();
+    value = value.replace(/,/g, '');
+    value = value.replace(/[₹$%]/g, '');
+    value = value.replace(/[📉📈🐂🐻]/g, '');
+    value = value.replace(/\s+/g, ' ');
+    value = value.replace(/[−–—]/g, '-');
+    const match = value.match(/-?\d+(?:\.\d+)?/);
+    return match ? match[0] : '';
+  }
+
+  function normalizeDate(rawValue) {
+    if (!rawValue) return '';
+    const value = rawValue.trim();
+    let match = value.match(/(\d{2})-(\d{2})-(\d{4})/);
+    if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+    match = value.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+    match = value.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+    return '';
+  }
+
+  function extractLineValue(text, labelPatterns) {
+    const patterns = Array.isArray(labelPatterns) ? labelPatterns : [labelPatterns];
+    for (const label of patterns) {
+      const regex = new RegExp(`${label}\\s*:\\s*([^\\n\\r]+)`, 'i');
+      const match = text.match(regex);
+      if (match) return match[1].trim();
+    }
+    return '';
+  }
+
+  function parseSentiment(value) {
+    const text = (value || '').toLowerCase();
+    if (!text) return '';
+    if (text.includes('strong bullish')) return 'STRONG_BULLISH';
+    if (text.includes('strong bearish')) return 'STRONG_BEARISH';
+    if (text.includes('bullish') || text.includes('positive')) return 'BULLISH';
+    if (text.includes('bearish') || text.includes('negative')) return 'BEARISH';
+    return 'NEUTRAL';
+  }
+
+  function setFieldValue(fieldName, value) {
+    const element = document.getElementById(`id_${fieldName}`);
+    if (!element || value === '' || value === null || value === undefined) return false;
+    element.value = value;
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }
+
+  function parseMarketSummary(text) {
+    const data = {};
+
+    const stockLine = text.match(/##\s*Stock:\s*([^(\\n\\r]+)\(([^)]+)\)/i);
+    if (stockLine) {
+      data.stock_symbol = stockLine[2].trim().toUpperCase();
+    } else {
+      const symbolOnly = extractLineValue(text, ['Stock Symbol', 'Stock']);
+      if (symbolOnly) data.stock_symbol = symbolOnly.replace(/[^A-Za-z]/g, '').toUpperCase();
+    }
+
+    const dateRaw = extractLineValue(text, ['Date']);
+    data.date = normalizeDate(dateRaw);
+
+    const numericMappings = {
+      stock_open: ['Stock Open'],
+      stock_close: ['Stock Close'],
+      stock_high: ['Stock High'],
+      stock_low: ['Stock Low'],
+      stock_volume: ['Stock Volume'],
+      nifty_open: ['Nifty Open'],
+      nifty_close: ['Nifty Close'],
+      nifty_change_points: ['Nifty Change Points'],
+      sensex_open: ['Sensex Open'],
+      sensex_close: ['Sensex Close'],
+      sensex_change_points: ['Sensex Change Points'],
+      india_vix: ['India VIX'],
+      gift_nifty_prev_day: ['GIFT Nifty \\(Prev Day\\)', 'Gift Nifty \\(Prev Day\\)'],
+      gift_nifty_next_day_indication: ['GIFT Nifty \\(Next Day Indication\\)', 'Gift Nifty \\(Next Day Indication\\)'],
+      gift_nifty_next_premium: ['GIFT Nifty \\(Next Premium\\)', 'Gift Nifty \\(Next Premium\\)'],
+      hangseng_open: ['Hang Seng Open'],
+      hangseng_at_india_close: ['Hang Seng at India Close'],
+      hangseng_change_points: ['Hang Seng Change Points'],
+      nikkei_open: ['Nikkei 225 Open', 'Nikkei Open'],
+      nikkei_at_india_open: ['Nikkei 225 at India Open', 'Nikkei at India Open'],
+      nikkei_change_points: ['Nikkei 225 Change Points', 'Nikkei Change Points'],
+      shanghai_composite_change: ['Shanghai Composite Change'],
+      dow_jones_prev_close: ['Dow Jones Prev Close'],
+      sp500_prev_close: ['S&P 500 Prev Close', 'SP500 Prev Close'],
+      nasdaq_prev_close: ['Nasdaq Prev Close'],
+      dow_jones_change_points: ['Dow Jones Change Points'],
+      dax_change_points: ['DAX Change Points'],
+      ftse_change_points: ['FTSE 100 Change Points', 'FTSE Change Points'],
+      cac40_change_points: ['CAC 40 Change Points', 'CAC40 Change Points'],
+      crude_oil_price: ['Crude Oil Price \\(Brent\\)', 'Crude Oil Price'],
+      dollar_index_dxy: ['Dollar Index \\(DXY\\)', 'Dollar Index'],
+      usd_inr: ['USD \\/ INR', 'USD\\/INR'],
+      fii_data_net: ['FII Data Net'],
+      dii_data_net: ['DII Data Net']
+    };
+
+    Object.entries(numericMappings).forEach(([fieldName, labels]) => {
+      const raw = extractLineValue(text, labels);
+      const normalized = normalizeNumber(raw);
+      if (normalized !== '') data[fieldName] = normalized;
+    });
+
+    const usSentimentRaw = extractLineValue(text, ['US Market Sentiment']);
+    data.us_market_sentiment = parseSentiment(usSentimentRaw);
+
+    const overallSentimentRaw = extractLineValue(text, ['Overall Market Sentiment']);
+    if (overallSentimentRaw) {
+      data.overall_market_sentiment = overallSentimentRaw.replace(/\[[^\]]+\]/g, '').trim();
+    }
+
+    const analystNotesMatch = text.match(/Analyst Notes\s*:\s*([\s\S]*?)(?:\[Rich media excluded from paste\]|If you'd like to look deeper into this|$)/i);
+    if (analystNotesMatch) {
+      data.analyst_notes = analystNotesMatch[1]
+        .replace(/\[[^\]]+\]/g, '')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
+    }
+
+    if (!data.overall_market_sentiment && overallSentimentRaw) {
+      data.overall_market_sentiment = overallSentimentRaw;
+    }
+
+    return data;
+  }
+
+  document.getElementById('parse-market-text').addEventListener('click', function() {
+    const text = document.getElementById('market-summary-input').value;
+    const status = document.getElementById('smart-paste-status');
+
+    if (!text.trim()) {
+      status.textContent = 'Pehle market summary text paste karo.';
+      status.className = 'small mt-2 text-danger';
+      return;
+    }
+
+    const parsed = parseMarketSummary(text);
+    let filledCount = 0;
+
+    Object.entries(parsed).forEach(([fieldName, value]) => {
+      if (setFieldValue(fieldName, value)) filledCount += 1;
+    });
+
+    if (!document.getElementById('id_overall_market_sentiment').value && parsed.us_market_sentiment) {
+      const fallback = parsed.us_market_sentiment.replaceAll('_', ' ');
+      if (setFieldValue('overall_market_sentiment', fallback)) filledCount += 1;
+    }
+
+    status.textContent = `${filledCount} fields auto-fill hui hain. Jahan exact number text me nahi mila, wahan field blank chhodi gayi hai.`;
+    status.className = 'small mt-2 text-success';
+  });
+</script>
+{% endblock %}

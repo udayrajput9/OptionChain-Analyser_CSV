@@ -1,0 +1,213 @@
+<!-- dashboard/templates/dashboard/components/algo_card.html -->
+
+<div class="algo-card card mb-3 border-3 
+  {% if 'BULLISH' in algo.signal %}border-success
+  {% elif 'BEARISH' in algo.signal %}border-danger
+  {% else %}border-warning{% endif %}">
+
+  <!-- ══ HEADER: ALGO NAME ══ -->
+  <div class="card-header d-flex justify-content-between align-items-center py-2 bg-transparent"
+       style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+    <h6 class="mb-0 fw-bold text-white fs-5">
+      {{ algo.icon }} {{ algo.algorithm_name }}
+    </h6>
+    <span class="badge {% if algo.category == 'ML' %}bg-primary{% else %}bg-purple{% endif %} fs-6" style="background-color: #6f42c1;">
+      {{ algo.category }}
+    </span>
+  </div>
+
+  <div class="card-body p-3">
+
+    <!-- ══ SIGNAL + CONFIDENCE ══ -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="badge fs-5 px-3 py-2
+        {% if 'BULLISH' in algo.signal %}bg-success
+        {% elif 'BEARISH' in algo.signal %}bg-danger
+        {% else %}bg-warning text-dark{% endif %}">
+        {% if 'BULLISH' in algo.signal %}🟢{% elif 'BEARISH' in algo.signal %}🔴{% else %}🟡{% endif %}
+        {{ algo.signal }}
+      </span>
+      <div class="text-end">
+        <small class="text-muted text-uppercase fw-bold">Confidence</small>
+        <div class="progress mt-1" style="width:140px; height:8px;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated
+            {% if 'BULLISH' in algo.signal %}bg-success
+            {% elif 'BEARISH' in algo.signal %}bg-danger
+            {% else %}bg-warning{% endif %}"
+            style="width:{{ algo.confidence }}%"></div>
+        </div>
+        <span class="text-white fw-bold fs-5">{{ algo.confidence|floatformat:0 }}%</span>
+      </div>
+    </div>
+
+    <!-- ══ PRICE TARGET BOX — MOST PROMINENT ══ -->
+    <div class="price-target-box p-3 rounded mb-3 text-center"
+         style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);">
+
+      <small class="text-info text-uppercase fw-bold d-block mb-1 tracking-wider">🎯 Kal Ka Price Target</small>
+
+      <!-- Big target price -->
+      <div class="display-5 fw-bold
+        {% if 'BULLISH' in algo.signal %}text-success
+        {% elif 'BEARISH' in algo.signal %}text-danger
+        {% else %}text-warning{% endif %}" style="text-shadow: 0 0 10px rgba(0,0,0,0.5);">
+        ₹ {{ algo.price_target_mid|floatformat:2 }}
+      </div>
+      <small class="text-muted fst-italic">← Most Likely Position &nbsp;</small>
+
+      <!-- Range bar -->
+      <div class="mt-3 px-2">
+        <div class="d-flex justify-content-between small text-muted mb-1">
+          <span class="text-start">🔴 ₹{{ algo.price_target_low|floatformat:2 }}<br><small>Bear Floor</small></span>
+          <span class="text-white fw-bold align-self-end bg-dark px-2 rounded-top">EXPECTED RANGE</span>
+          <span class="text-end">₹{{ algo.price_target_high|floatformat:2 }} 🟢<br><small>Bull Ceiling</small></span>
+        </div>
+        <!-- Visual range slider -->
+        <div class="position-relative" style="height: 12px; background: linear-gradient(to right, #d50000 0%, #ffd740 50%, #00c853 100%); border-radius: 6px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+          <!-- Current price marker -->
+          <div class="position-absolute shadow" style="
+            left: {{ algo.current_price_pct_in_range }}%;
+            top: -6px;
+            width: 24px; height: 24px;
+            background: white;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            border: 3px solid #111;">
+          </div>
+        </div>
+        <div class="text-center mt-2 pb-1">
+          <small class="text-muted">Max Expected Swing: 
+            <span class="text-light fw-bold">₹{{ algo.range_width|floatformat:0 }}</span> 
+            ({{ algo.range_pct|floatformat:1 }}%)
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ KEY INSIGHT ══ -->
+    <div class="insight-box p-3 rounded mb-3 shadow-sm"
+         style="background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border-left: 4px solid 
+         {% if 'BULLISH' in algo.signal %}#00c853{% elif 'BEARISH' in algo.signal %}#d50000{% else %}#ffd740{% endif %};">
+      <small class="text-muted fw-bold text-uppercase"><i class="bi bi-lightbulb-fill"></i> Logic & Commentary</small>
+      <p class="mb-0 mt-2 small text-light fw-medium lh-lg" style="letter-spacing: 0.3px;">
+        "{{ algo.key_insight }}"
+      </p>
+    </div>
+
+    <!-- ══ ACTUAL OUTCOME SECTION ══ -->
+    {% if algo.outcome %}
+    <div class="outcome-box p-3 rounded mt-4
+      {% if algo.outcome.direction_correct and algo.outcome.price_in_range %}
+        outcome-perfect" style="background: rgba(0,200,83,0.12); border: 1px solid #00c853;"
+      {% elif algo.outcome.direction_correct %}
+        outcome-partial" style="background: rgba(255,215,64,0.12); border: 1px solid #ffd740;"
+      {% else %}
+        outcome-wrong" style="background: rgba(213,0,0,0.12); border: 1px solid #d50000;"
+      {% endif %}>
+
+      <small class="text-muted d-block mb-2 text-uppercase fw-bold opacity-75">🎯 Verified Outcome</small>
+
+      <!-- Actual close price -->
+      <div class="text-center mb-3">
+        <small class="text-muted">Closing Price Registered</small>
+        <div class="fs-3 fw-bold text-white">₹ {{ algo.outcome.actual_close|floatformat:2 }}</div>
+      </div>
+
+      <div class="row text-center mb-2 g-2">
+        <div class="col-6">
+          <div class="p-2 rounded" style="background: rgba(0,0,0,0.3);">
+            <div class="{% if algo.outcome.direction_correct %}text-success{% else %}text-danger{% endif %} small text-uppercase">
+              Direction Matrix
+            </div>
+            <strong class="{% if algo.outcome.direction_correct %}text-success{% else %}text-danger{% endif %} fs-5">
+              {% if algo.outcome.direction_correct %}✅ SAHI{% else %}❌ GALAT{% endif %}
+            </strong>
+          </div>
+        </div>
+        <div class="col-6">
+           <div class="p-2 rounded" style="background: rgba(0,0,0,0.3);">
+            <div class="{% if algo.outcome.price_in_range %}text-success{% else %}text-warning{% endif %} small text-uppercase">
+              Range Target
+            </div>
+            <strong class="{% if algo.outcome.price_in_range %}text-success{% else %}text-warning{% endif %} fs-5">
+              {% if algo.outcome.price_in_range %}🎯 HIT{% else %}⚠️ MISS{% endif %}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Target vs Actual comparison -->
+      <div class="mt-3 p-2 rounded text-center shadow-sm" style="background: rgba(0,0,0,0.4); border-top: 1px solid rgba(255,255,255,0.1);">
+        <small class="text-muted font-monospace">
+          Trgt: <strong class="text-white">₹{{ algo.price_target_mid|floatformat:2 }}</strong>
+          &nbsp;|&nbsp;
+          Diff Error: <strong class="
+            {% if algo.outcome.price_error_pct < 1 %}text-success
+            {% elif algo.outcome.price_error_pct < 3 %}text-warning
+            {% else %}text-danger{% endif %}">
+            {{ algo.outcome.price_error_pct|floatformat:2 }}%
+          </strong>
+        </small>
+      </div>
+
+      <!-- Score -->
+      <div class="text-center mt-3">
+        <span class="badge fs-5 px-4 py-2 shadow
+          {% if algo.outcome.score >= 80 %}bg-success
+          {% elif algo.outcome.score >= 60 %}bg-warning text-dark
+          {% else %}bg-danger{% endif %}">
+          SCORE: {{ algo.outcome.score|floatformat:0 }} / 100
+        </span>
+      </div>
+
+    </div>
+    {% else %}
+    <!-- Pending state -->
+    <div class="outcome-box p-4 rounded text-center mt-4 shadow-sm"
+         style="background: rgba(0,0,0,0.2); border: 2px dashed rgba(255,255,255,0.15);">
+      <div class="text-light mb-1 fw-bold fs-5 text-uppercase opacity-75">⏳ Result Pending</div>
+      <small class="text-muted d-block mb-3 px-3">
+        Actual close price has not been registered. Awaiting end-of-day market feedback to evaluate prediction.
+      </small>
+        {% comment %}
+        URL cannot be used easily since stock and date are not in context inside component without passing,
+        assuming the caller provides it or we leave it. Just a placeholder button.
+        {% endcomment %}
+      <div class="btn btn-sm btn-outline-secondary disabled rounded-pill px-3">
+        Outcome Expected Soon
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- ══ FOOTER: RUNNING ACCURACY ══ -->
+  <div class="card-footer py-3 px-4 rounded-bottom"
+       style="background: #0d0e12; border-top: 1px solid rgba(255,255,255,0.05);">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="text-center">
+        <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Lifetime Acc</small>
+        <strong class="text-white fs-6">{{ algo.metrics.direction_accuracy|default:"—" }}%</strong>
+      </div>
+      <div class="text-center border-start border-end border-secondary px-3" style="border-opacity: 0.2;">
+        <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Last 10 Acc</small>
+        <strong class="
+          {% if algo.metrics.rolling_10_accuracy and algo.metrics.rolling_10_accuracy >= 70 %}text-success
+          {% elif algo.metrics.rolling_10_accuracy and algo.metrics.rolling_10_accuracy >= 50 %}text-warning
+          {% else %}text-danger{% endif %} fs-6">
+          {{ algo.metrics.rolling_10_accuracy|default:"—" }}%
+        </strong>
+      </div>
+      <div class="text-center">
+         <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Risk Matrix</small>
+        <strong class="
+          {% if algo.risk_level == 'LOW' %}text-success
+          {% elif algo.risk_level == 'HIGH' %}text-danger
+          {% else %}text-warning{% endif %} tracking-wider fs-6">
+          {{ algo.risk_level }}
+        </strong>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,61 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h3 class="mb-3">Super Brain Prediction</h3>
+        <p class="text-muted">Stock: {{ stock }} | Analysis date: {{ analysis_date }}{% if active_context_slot %} | Active slot: {{ active_context_slot }}{% endif %}</p>
+        {% if sb %}
+        <div class="row mb-3">
+          <div class="col-md-4"><strong>Signal</strong><div>{{ sb.super_brain_signal }}</div></div>
+          <div class="col-md-4"><strong>Confidence</strong><div>{{ sb.super_brain_confidence }}%</div></div>
+          <div class="col-md-4"><strong>Target</strong><div>Rs {{ sb.super_brain_price_target|floatformat:2 }}</div></div>
+        </div>
+        <p><strong>Reasoning:</strong> {{ sb.super_brain_reasoning }}</p>
+        <p><strong>Bull Case:</strong> {{ sb.bull_case.condition }} Target Rs {{ sb.bull_case.price_target }}</p>
+        <p><strong>Base Case:</strong> {{ sb.base_case.condition }} Target Rs {{ sb.base_case.price_target }}</p>
+        <p><strong>Bear Case:</strong> {{ sb.bear_case.condition }} Target Rs {{ sb.bear_case.price_target }}</p>
+        <h5 class="mt-4">Key Factors</h5>
+        <ul class="mb-0">
+          {% for factor in sb.super_brain_key_factors %}
+          <li>{{ factor.rank }}. {{ factor.factor }} ({{ factor.impact }})</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="mb-0">Is date ke liye Super Brain output abhi generate nahi hua.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h4 class="mb-3">Memory</h4>
+        {% if memory %}
+        <p class="mb-2"><strong>Days Learned:</strong> {{ memory.total_days_learned }}</p>
+        <p class="mb-0">{{ memory.accumulated_learnings|truncatechars:500 }}</p>
+        {% else %}
+        <p class="mb-0">Abhi tak learning memory create nahi hui.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h4 class="mb-3">Algorithm Leaderboard</h4>
+        {% for metric in metrics %}
+        <div class="d-flex justify-content-between border-bottom py-2">
+          <span>{{ metric.algo_name }}</span>
+          <span>{{ metric.combined_score }}</span>
+        </div>
+        {% empty %}
+        <p class="mb-0">Validated data aane par leaderboard populate hoga.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
